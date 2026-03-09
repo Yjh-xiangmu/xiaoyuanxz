@@ -19,3 +19,12 @@ mybatis-plus:
       id-type: auto # ???????
 file:
   upload-dir: E:/Projects/xiaoyuanxz/uploads/
+# ?????????
+alipay:
+  app-id: 9021000158651702 # TODO: ???????APPID
+  private-key: MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCA1wW8X4TpruHWW4CvMZ9KhAx3TAshl84EC8VJYBELXUtRTQ/F1WqmML6Y6f4W4UZvAppCm7TkSRwq33u++RY+EdYQuplJPz1CRYGhIt/uML5kbxs1G5zxpTIkq9lzfqGzJomb0Ufsh8P7OCh0Phf8ZcXd66RQVOHNKW/olwkPk7rVa/8e24LzJNbgtmcrEfG29PgrwWTejwA8BAUR18CodlPtpWazSOcirKptRFWM3l87HRJLvqYicIREFfbUhXunGFGJCMQkxmn28A9DSmqy3Vh7VtOtgl0n4fy00fIfq4+FWdGjEhBB8JcGNjxCWQ/4a0HPVdWI4JNxlLWo4bTtAgMBAAECggEAPG8f5KVVfhunGVpgeU0ob9aS1l6YFhDT9Pfkea+TLyZ6zs776AtcdEoHDUktA2R2Glo5K6dH6ZEVolKkBAdo1IKfS8eLYV1FidF6pa/rJBo/JHMtavLh4kNfyu3FGTS7+oHIKIu5Vgy09CD6cNQzghPnBVqj/35hUE/wi0RVXrV9kD5BPSq0boL+53pxKrI/pCDqY5WsSQ+E2TvZKe090IgUqDCpBINy+GtEWCy4c+5WfMXnWuj7d5I05/avqYMJLNkhYl/qbr1nq7B3jQFareUEgPfFZljLL5Hjc6CrrkvbCodANasYTVuTWFsM1mUPwRvAInxepOTfnAbstzDNTQKBgQC55xAjJKRjdlHIGEd2IVZrfM4TrmTVGNT+RkzguQ9ovf9a2R7o4hsnEqNSxrxTRSzzvcULgoXSWaF+HPHbTYBGCBkrqJ9Wh5DFyKIiSPA6rHbWHELEBQqh7yNOT8Wpgi7/ZMGhLZmaK3d4PgwZJe2mksLmiidALr6TbxSJFU6iowKBgQCxa8ZMlqzt3IOInMTHCmMOltE4xyTZzIpMosZNpTw7p1yKGpGOozKq+EaYGk9XqG2812due70iOeaYefidiXI6rUrtc+AMd3p1IQEGuRskQ6k8PpTlILm9d5OG96WRZic8NNyNlmmDbufFpteomXF7N4KOKrRGNlpbeRtYXt1TLwKBgCHsRyaSjijUM3I28/tbdACjQpuWzDGSmXNY8rhjLKupWAqE6j4G3HuRzBnTyBPN4LkNnQJPrAnJb02rDHs/NjQRUD6GQ6Uvkbx1sxhchPG//ONvPsO0Q89u6ttkdSZMajUSdr7pqkjWu7NGZ0DDig1GZKha93Sf0wjmUTH+oF3PAoGAUV4EC4vuswe2qyh6dm4lD8PLICb0l45evtbH60QkY5dVsWCN8MSXsCE8/vTR/nmYGksPfHPzQYccYkFN67HlWVOwUUYbMpx45M7GEbdC41bEfoSU9KAVjvcQCY35uL0IsWvs2mJo8YYjdVoW/ZOhn8jNbzXWh3zV462fBOA80LECgYBKtIdGnYDnP5OraniRuWDdu25OfeFOEVrdYd8O1jEwJs+LVIsbp60O0oSlT02FEWq7LUi0KAZrV8i/JRewCmlDjOyuEIwmbwFWOedPPfurrkdML/rMJ4EPAcWy9DMvdSvx4HL1/cHOKJDsEG/natXjz47nodxJyoIUCT/WQdeBlQ== # TODO: ????????? (????????????????)
+  alipay-public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmxJrrnMXP+746gd2NeEGjMS6pChy8yDTnXMzlKvetjALS3bzm3G0ofGWPYhCJOJLMO1w2AUnmUSSvwQ8tR7CMmgzdspKd/QsDyb+rqHpOKzZknC/ZMceAZH5UPmvZEcPDAuonHFRD7lswQa/bbzauZBSTjOTiwTg7u1h3SZV5+iUqjWS+EoJg9R2WqRiOMk6Bo94B0TuCprPbOfACs9QhzC+Ihpx229ZT0b4e3nCsUMIJ95PU3cns+lobO7iLoVyLoH+8rXOVjI5VD5kYIi0S9W/F3VgrQoMqzDuEu8oxS60iPdXzUGQQU3TyaY2oVaTbAuBSL5AqbkO2Xp18jJ89wIDAQAB # TODO: ?????????? (????????????????)
+  # ?????????????
+  gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+  # ?????????????????????????????(??????)
+  return-url: http://localhost:8080/api/alipay/return

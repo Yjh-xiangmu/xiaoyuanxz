@@ -19,7 +19,8 @@ const router = createRouter({
       component: () => import('../layout/admin/AdminLayout.vue'),
       redirect: '/admin/dashboard',
       children: [
-        { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') }
+        { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
+        { path: 'audit', component: () => import('../views/admin/Audit.vue') }
         // TODO: 之后把审核中心等加在这里
       ]
     },
@@ -31,7 +32,13 @@ const router = createRouter({
       children: [
         { path: 'home', component: () => import('../views/user/Home.vue') },
         { path: 'publish', component: () => import('../views/user/Publish.vue') },
-
+        { path: 'message', component: () => import('../views/user/Message.vue') },
+        { path: 'market', component: () => import('../views/user/Market.vue') },
+        { path: 'goods/:id', component: () => import('../views/user/GoodsDetail.vue') },
+        { path: 'orders', component: () => import('../views/user/Orders.vue') },
+        { path: 'address', component: () => import('../views/user/Address.vue') },
+        { path: 'mygoods', component: () => import('../views/user/MyGoods.vue') },
+        { path: 'sellorders', component: () => import('../views/user/SellOrders.vue') }
         // TODO: 之后把集市、发布闲置等加在这里
       ]
     }

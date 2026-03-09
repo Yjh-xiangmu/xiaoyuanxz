@@ -7,6 +7,15 @@
           <router-link to="/user/home" class="nav-item">首页大盘</router-link>
           <router-link to="/user/market" class="nav-item">逛集市</router-link>
           <router-link to="/user/publish" class="nav-item">我要发布</router-link>
+          <router-link to="/user/orders" class="nav-item">我的订单</router-link>
+          <router-link to="/user/mygoods" class="nav-item">我的发布</router-link>
+          <router-link to="/user/sellorders" class="nav-item">我卖出的</router-link>
+          <router-link to="/user/address" class="nav-item">地址管理</router-link>
+          <router-link to="/user/message" class="nav-item">
+            <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
+              消息中心
+            </el-badge>
+          </router-link>
         </div>
         <div class="user-area">
           <span class="credit">信誉分: {{ userStore.userInfo.creditScore }}</span>
@@ -133,7 +142,31 @@ const submitAuth = async () => {
     ElMessage.error('网络请求失败')
   }
 }
+// 🌟 新增：获取未读消息数量逻辑
+const unreadCount = ref(0)
+const fetchUnreadCount = async () => {
+  if (!userStore.userInfo.id) return
+  try {
+    const res = await axios.get('/api/notification/unreadCount', {
+      params: { userId: userStore.userInfo.id }
+    })
+    if (res.data.code === 200) {
+      unreadCount.value = res.data.data
+    }
+  } catch (error) {
+    console.error('获取未读消息数量失败')
+  }
+}
 
+// 页面加载时拉取一次未读数量
+onMounted(() => {
+  // 原有的实名认证弹窗逻辑...
+  if (!userStore.userInfo.realName) {
+    showAuthDialog.value = true
+  }
+  // 🌟 新增拉取数量
+  fetchUnreadCount()
+})
 // 退出登录
 const logout = () => {
   userStore.clearUserInfo()
