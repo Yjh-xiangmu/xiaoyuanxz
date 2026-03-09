@@ -18,6 +18,14 @@
 
         <div class="right-info">
           <h1 class="goods-title">{{ goods.title }}</h1>
+          <div style="display: flex; align-items: center; margin: 15px 0; padding: 10px; background: #fafafa; border-radius: 8px; cursor: pointer; transition: background 0.3s;" @click="router.push(`/user/seller/${goods.sellerId}`)">
+            <div style="width: 40px; height: 40px; background: #ffe60f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin-right: 15px;">卖</div>
+            <div style="flex: 1;">
+              <div style="font-size: 15px; font-weight: bold; color: #333;">点击查看卖家信用主页</div>
+              <div style="font-size: 12px; color: #999;">深入了解卖家的历史评价与在售商品</div>
+            </div>
+            <div style="color: #ccc;">❯</div>
+          </div>
           <div class="price-box">
             <div class="current-price"><span class="symbol">￥</span>{{ goods.price }}</div>
             <div class="original-price" v-if="goods.originalPrice">原价: ￥{{ goods.originalPrice }}</div>

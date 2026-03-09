@@ -11,6 +11,7 @@
           <router-link to="/user/mygoods" class="nav-item">我的发布</router-link>
           <router-link to="/user/sellorders" class="nav-item">我卖出的</router-link>
           <router-link to="/user/address" class="nav-item">地址管理</router-link>
+          <router-link to="/user/profile" class="nav-item">个人中心</router-link>
           <router-link to="/user/message" class="nav-item">
             <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
               消息中心

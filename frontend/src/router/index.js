@@ -38,7 +38,9 @@ const router = createRouter({
         { path: 'orders', component: () => import('../views/user/Orders.vue') },
         { path: 'address', component: () => import('../views/user/Address.vue') },
         { path: 'mygoods', component: () => import('../views/user/MyGoods.vue') },
-        { path: 'sellorders', component: () => import('../views/user/SellOrders.vue') }
+        { path: 'sellorders', component: () => import('../views/user/SellOrders.vue') },
+        { path: 'profile', component: () => import('../views/user/Profile.vue') },
+        { path: 'seller/:id', component: () => import('../views/user/SellerProfile.vue') }
         // TODO: 之后把集市、发布闲置等加在这里
       ]
     }

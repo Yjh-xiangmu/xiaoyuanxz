@@ -6,7 +6,11 @@ import com.example.backend.entity.User;
 import com.example.backend.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.backend.entity.Review;
+import com.example.backend.mapper.ReviewMapper;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 
 @RestController
@@ -16,7 +20,34 @@ public class UserController {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private ReviewMapper reviewMapper;
+    // 🌟 获取卖家信用主页的头部汇总信息
+    @GetMapping("/sellerInfo")
+    public Result<Map<String, Object>> getSellerInfo(@RequestParam Long sellerId) {
+        User seller = userMapper.selectById(sellerId);
+        if (seller == null) return Result.error("用户不存在");
 
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", seller.getId());
+        map.put("username", seller.getUsername());
+        map.put("creditScore", seller.getCreditScore());
+
+        // 计算平均星级和评价总数（只算初评，追评没有星级）
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Review> qw = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        qw.eq("seller_id", sellerId).eq("is_append", 0);
+        List<Review> reviews = reviewMapper.selectList(qw);
+
+        double avgRating = 0.0;
+        if (!reviews.isEmpty()) {
+            double sum = reviews.stream().mapToInt(Review::getRating).sum();
+            avgRating = sum / reviews.size();
+        }
+        map.put("reviewCount", reviews.size());
+        map.put("avgRating", String.format("%.1f", avgRating));
+
+        return Result.success(map);
+    }
     // 注册接口
     @PostMapping("/register")
     public Result<?> register(@RequestBody User user) {
@@ -81,5 +112,17 @@ public class UserController {
         // 3. 重新查出最新的用户信息并返回给前端
         User newestUser = userMapper.selectById(user.getId());
         return Result.success(newestUser);
+    }
+    // 🌟 修改个人信息接口
+    @PostMapping("/update")
+    public Result<?> updateProfile(@RequestBody User user) {
+        if (user.getId() == null) {
+            return Result.error("用户ID不能为空");
+        }
+
+        // 如果用户修改了密码，可以在这里加加密逻辑（目前咱们是明文，直接存）
+        userMapper.updateById(user);
+
+        return Result.success("个人信息修改成功！下次登录生效。");
     }
 }
