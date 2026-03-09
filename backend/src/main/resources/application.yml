@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/xiaoyuanxz?serverTimezone=Asia/Shanghai&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456 # TODO: ??????MySQL??
+  multipart:
+    max-file-size: 100MB
+    max-request-size: 100MB
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # ??????SQL???????
+  global-config:
+    db-config:
+      id-type: auto # ???????
+file:
+  upload-dir: E:/Projects/xiaoyuanxz/uploads/
