@@ -85,14 +85,6 @@ const authForm = reactive({
   phone: ''
 })
 
-// 页面加载时检查是否已经实名
-onMounted(() => {
-  // 如果没有真实姓名，就强制弹窗
-  if (!userStore.userInfo.realName) {
-    showAuthDialog.value = true
-  }
-})
-
 // 提交实名认证
 const submitAuth = async () => {
   if (!authForm.realName || !authForm.idCard || !authForm.phone) {
@@ -122,7 +114,8 @@ const submitAuth = async () => {
   }
 
   try {
-    const res = await axios.post('/api/user/auth', {
+    // 🌟 核心修复：复用已有的 /api/user/update 接口，代替不存在的 /auth 接口
+    const res = await axios.post('/api/user/update', {
       id: userStore.userInfo.id,
       realName: authForm.realName,
       // 统一将身份证最后一位的 x 转为大写 X 存入数据库，方便后续比对
@@ -132,8 +125,12 @@ const submitAuth = async () => {
 
     if (res.data.code === 200) {
       ElMessage.success('实名认证成功！可以开始使用平台啦。')
-      // 更新 Pinia 中的用户信息
-      userStore.setUserInfo(res.data.data)
+
+      // 🌟 核心修复：手动更新 Pinia 里的用户信息缓存
+      userStore.userInfo.realName = authForm.realName
+      userStore.userInfo.idCard = authForm.idCard.toUpperCase()
+      userStore.userInfo.phone = authForm.phone
+
       // 关闭弹窗
       showAuthDialog.value = false
     } else {
@@ -143,7 +140,8 @@ const submitAuth = async () => {
     ElMessage.error('网络请求失败')
   }
 }
-// 🌟 新增：获取未读消息数量逻辑
+
+// 获取未读消息数量逻辑
 const unreadCount = ref(0)
 const fetchUnreadCount = async () => {
   if (!userStore.userInfo.id) return
@@ -159,15 +157,16 @@ const fetchUnreadCount = async () => {
   }
 }
 
-// 页面加载时拉取一次未读数量
+// 页面加载时统一执行逻辑
 onMounted(() => {
-  // 原有的实名认证弹窗逻辑...
+  // 检查是否需要实名认证弹窗
   if (!userStore.userInfo.realName) {
     showAuthDialog.value = true
   }
-  // 🌟 新增拉取数量
+  // 拉取未读消息数量
   fetchUnreadCount()
 })
+
 // 退出登录
 const logout = () => {
   userStore.clearUserInfo()

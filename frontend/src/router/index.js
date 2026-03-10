@@ -51,12 +51,13 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+// 🌟 修复后的路由守卫
+router.beforeEach((to, from) => {
   const userStore = useUserStore()
   if (to.path !== '/login' && !userStore.userInfo.id) {
-    next('/login')
+    return '/login' // 替代原来的 next('/login')
   } else {
-    next()
+    return true // 替代原来的 next()，表示放行
   }
 })
 

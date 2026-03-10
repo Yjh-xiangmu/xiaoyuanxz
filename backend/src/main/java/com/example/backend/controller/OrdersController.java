@@ -188,4 +188,25 @@ public class OrdersController {
         }
         return Result.error("操作失败，当前订单状态不支持退款。");
     }
+    // 🌟 买家：取消未支付的订单
+    @PostMapping("/cancel/{id}")
+    public Result<?> cancelOrder(@PathVariable Long id) {
+        Orders order = ordersMapper.selectById(id);
+
+        // 只有 0(待支付) 的订单允许买家自行取消
+        if (order != null && order.getStatus() == 0) {
+            // 1. 将订单状态改为 4(已取消)
+            order.setStatus(4);
+            ordersMapper.updateById(order);
+
+            // 2. 释放库存：将关联商品的状态恢复为 1(在售)，让其他人可以继续买
+            Goods goods = new Goods();
+            goods.setId(order.getGoodsId());
+            goods.setStatus(1);
+            goodsMapper.updateById(goods);
+
+            return Result.success("订单取消成功！商品已重新恢复在售。");
+        }
+        return Result.error("操作失败，该订单当前状态无法取消。");
+    }
 }

@@ -30,15 +30,23 @@
             <el-tag v-else-if="scope.row.status === 1" type="warning">待发货</el-tag>
             <el-tag v-else-if="scope.row.status === 2" type="primary">已发货</el-tag>
             <el-tag v-else-if="scope.row.status === 3" type="success">已完成</el-tag>
+            <el-tag v-else-if="scope.row.status === 4" type="info">已取消</el-tag>
           </template>
         </el-table-column>
 
         <el-table-column label="操作" align="center" fixed="right" min-width="180">
           <template #default="scope">
-            <el-button v-if="scope.row.status === 0" size="small" type="primary" @click="continuePay(scope.row.orderNo)">
-              支付
-            </el-button>
-            <el-button v-if="scope.row.status <= 1" size="small" type="warning" plain @click="openAddressDialog(scope.row)">
+
+            <template v-if="scope.row.status === 0">
+              <el-button size="small" type="primary" @click="continuePay(scope.row.orderNo)">
+                支付
+              </el-button>
+              <el-button size="small" type="danger" plain @click="handleCancel(scope.row.id)">
+                取消
+              </el-button>
+            </template>
+
+            <el-button v-if="scope.row.status <= 1" size="small" type="warning" plain @click="openAddressDialog(scope.row)" style="margin-left: 10px;">
               改地址
             </el-button>
 
@@ -54,6 +62,7 @@
                 追加评价
               </el-button>
             </template>
+
           </template>
         </el-table-column>
       </el-table>
@@ -74,7 +83,7 @@
       </div>
       <template #footer>
         <el-button @click="addrDialogVisible = false">取消</el-button>
-        <el-button type="primary" color="#ffe60f" style="color: #333; font-weight: bold;" @click="submitNewAddress">确认修改</el-button>
+        <el-button type="primary" color="#409EFF" style="font-weight: bold;" @click="submitNewAddress">确认修改</el-button>
       </template>
     </el-dialog>
 
@@ -135,7 +144,26 @@ onMounted(() => fetchOrders())
 // 继续支付
 const continuePay = (orderNo) => { window.location.href = `http://localhost:8080/api/alipay/pay?orderNo=${orderNo}` }
 
-// ====== 🌟 修改地址相关 ======
+// 🌟 取消未支付订单
+const handleCancel = (id) => {
+  ElMessageBox.confirm('确定要取消这个未支付的订单吗？取消后商品将重新上架。', '取消订单确认', {
+    confirmButtonText: '确定取消',
+    cancelButtonText: '暂不取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await axios.post(`/api/orders/cancel/${id}`)
+      if (res.data.code === 200) {
+        ElMessage.success(res.data.msg)
+        fetchOrders() // 刷新列表，状态变为已取消
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    } catch (error) { ElMessage.error('操作失败') }
+  }).catch(() => {})
+}
+
+// 修改地址相关
 const openAddressDialog = async (row) => {
   currentOrderId.value = row.id
   addrDialogVisible.value = true
@@ -165,7 +193,7 @@ const submitNewAddress = async () => {
   } catch (error) { ElMessage.error('修改失败') }
 }
 
-// ====== 🌟 确认收货相关 ======
+// 确认收货相关
 const handleReceive = (id) => {
   ElMessageBox.confirm('请确认您已收到商品并且无质量问题。确认收货后，交易将完成。', '确认收货', {
     confirmButtonText: '确认收货',
@@ -182,7 +210,7 @@ const handleReceive = (id) => {
   }).catch(() => {})
 }
 
-// ====== 🌟 评价与追评相关 ======
+// 评价与追评相关
 const openReviewDialog = (row, append) => {
   isAppendMode.value = append
   reviewForm.orderId = row.id
@@ -229,6 +257,6 @@ const submitReview = async () => {
 
 <style scoped>
 .orders-container { display: flex; justify-content: center; }
-.orders-box { width: 1000px; background: #fff; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 500px; }
-.page-title { margin-top: 0; margin-bottom: 20px; color: #333; border-bottom: 2px solid #ffe60f; padding-bottom: 8px; display: inline-block; }
+.orders-box { width: 1050px; background: #fff; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 500px; }
+.page-title { margin-top: 0; margin-bottom: 20px; color: #333; border-bottom: 2px solid #409EFF; padding-bottom: 8px; display: inline-block; }
 </style>
