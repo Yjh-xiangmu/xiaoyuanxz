@@ -58,7 +58,15 @@ public class ChatController {
 
                 Map<String, Object> sessionInfo = new HashMap<>();
                 sessionInfo.put("partnerId", partnerId);
-                sessionInfo.put("partnerName", partner != null ? partner.getUsername() : "未知用户");
+                String pName = "未知用户";
+                if (partner != null) {
+                    pName = (partner.getRealName() != null && !partner.getRealName().trim().isEmpty())
+                            ? partner.getRealName() + " (" + partner.getUsername() + ")"
+                            : partner.getUsername();
+                }
+                sessionInfo.put("partnerName", pName);
+
+                sessionInfo.put("partnerAvatar", partner != null ? partner.getAvatar() : null);
                 sessionInfo.put("latestMessage", msg.getContent());
                 sessionInfo.put("updateTime", msg.getCreateTime());
 

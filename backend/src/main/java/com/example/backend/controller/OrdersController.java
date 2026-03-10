@@ -138,4 +138,54 @@ public class OrdersController {
         }
         return Result.error("操作失败，订单未发货");
     }
+    // 🌟 1. 管理员：获取全平台订单列表（支持按订单号搜索）
+    @GetMapping("/adminList")
+    public Result<java.util.List<Orders>> getAdminList(@RequestParam(required = false) String keyword) {
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Orders> qw = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            qw.like("order_no", keyword);
+        }
+        qw.orderByDesc("create_time");
+        return Result.success(ordersMapper.selectList(qw));
+    }
+
+    // 🌟 2. 管理员：平台强制介入退款仲裁 (将订单改为 4-已取消)
+    @PostMapping("/forceRefund/{id}")
+    public Result<?> forceRefund(@PathVariable Long id) {
+        Orders order = ordersMapper.selectById(id);
+        if (order == null) return Result.error("订单不存在");
+
+        // 只有 1(已支付) 和 2(已发货) 的状态才能强制退款
+        if (order.getStatus() == 1 || order.getStatus() == 2) {
+            order.setStatus(4); // 4: 你的SQL里定义的"已取消"
+            ordersMapper.updateById(order);
+
+            // 给买家发通知
+            Notification buyerMsg = new Notification();
+            buyerMsg.setUserId(order.getBuyerId());
+            buyerMsg.setTitle("💰 平台介入退款通知");
+            buyerMsg.setContent("管理员介入仲裁，您的订单 [" + order.getOrderNo() + "] 已被强制取消，实付款项将原路退回！");
+            buyerMsg.setIsRead(0);
+            buyerMsg.setCreateTime(LocalDateTime.now());
+            notificationMapper.insert(buyerMsg);
+
+            // 给卖家发警告通知
+            Notification sellerMsg = new Notification();
+            sellerMsg.setUserId(order.getSellerId());
+            sellerMsg.setTitle("🚨 订单仲裁强制退款通知");
+            sellerMsg.setContent("因买家维权或违规交易，管理员已将您的订单 [" + order.getOrderNo() + "] 强制取消并执行退款操作！");
+            sellerMsg.setIsRead(0);
+            sellerMsg.setCreateTime(LocalDateTime.now());
+            notificationMapper.insert(sellerMsg);
+
+            // 联动：将涉事商品直接变成 3(违规下架) 状态，等待卖家重新编辑重审
+            Goods goods = new Goods();
+            goods.setId(order.getGoodsId());
+            goods.setStatus(3);
+            goodsMapper.updateById(goods);
+
+            return Result.success("仲裁退款执行成功！已通知买卖双方。");
+        }
+        return Result.error("操作失败，当前订单状态不支持退款。");
+    }
 }

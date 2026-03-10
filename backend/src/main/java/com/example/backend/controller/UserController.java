@@ -2,27 +2,77 @@ package com.example.backend.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.backend.common.Result;
+import com.example.backend.entity.Notification;
+import com.example.backend.entity.Review;
 import com.example.backend.entity.User;
+import com.example.backend.mapper.NotificationMapper;
+import com.example.backend.mapper.ReviewMapper;
 import com.example.backend.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import com.example.backend.entity.Review;
-import com.example.backend.mapper.ReviewMapper;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin // 🌟解决前端Vue的跨域请求问题，必加！
+@CrossOrigin
 public class UserController {
 
     @Autowired
     private UserMapper userMapper;
     @Autowired
     private ReviewMapper reviewMapper;
-    // 🌟 获取卖家信用主页的头部汇总信息
+    @Autowired
+    private NotificationMapper notificationMapper;
+
+    // 1. 用户登录
+    @PostMapping("/login")
+    public Result<User> login(@RequestBody User user) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("username", user.getUsername()).eq("password", user.getPassword());
+        User dbUser = userMapper.selectOne(qw);
+
+        if (dbUser == null) {
+            return Result.error("用户名或密码错误");
+        }
+        // 根据你的 SQL：0-限制登录封禁
+        if (dbUser.getStatus() != null && dbUser.getStatus() == 0) {
+            return Result.error("该账号已被管理员封禁，禁止登录！");
+        }
+        return Result.success(dbUser);
+    }
+
+    // 2. 用户注册
+    @PostMapping("/register")
+    public Result<User> register(@RequestBody User user) {
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("username", user.getUsername());
+        if (userMapper.selectCount(qw) > 0) {
+            return Result.error("该用户名/学号已存在");
+        }
+        user.setRole("USER");
+        user.setCreditScore(new BigDecimal("100.0"));
+        user.setStatus(1); // 1-正常
+        user.setCreateTime(LocalDateTime.now());
+        userMapper.insert(user);
+        return Result.success(user);
+    }
+
+    // 3. 修改个人信息
+    @PostMapping("/update")
+    public Result<?> updateProfile(@RequestBody User user) {
+        if (user.getId() == null) {
+            return Result.error("用户ID不能为空");
+        }
+        userMapper.updateById(user);
+        return Result.success("个人信息修改成功！下次登录生效。");
+    }
+
+    // 4. 获取卖家信用主页的头部汇总信息
     @GetMapping("/sellerInfo")
     public Result<Map<String, Object>> getSellerInfo(@RequestParam Long sellerId) {
         User seller = userMapper.selectById(sellerId);
@@ -30,11 +80,18 @@ public class UserController {
 
         Map<String, Object> map = new HashMap<>();
         map.put("id", seller.getId());
-        map.put("username", seller.getUsername());
-        map.put("creditScore", seller.getCreditScore());
 
-        // 计算平均星级和评价总数（只算初评，追评没有星级）
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Review> qw = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        // 🌟 核心修改：如果有真实姓名，就拼接成 "张三 (2024001)"
+        String displayName = seller.getUsername();
+        if (seller.getRealName() != null && !seller.getRealName().trim().isEmpty()) {
+            displayName = seller.getRealName() + " (" + seller.getUsername() + ")";
+        }
+        map.put("username", displayName);
+
+        map.put("creditScore", seller.getCreditScore());
+        map.put("avatar", seller.getAvatar());
+
+        QueryWrapper<Review> qw = new QueryWrapper<>();
         qw.eq("seller_id", sellerId).eq("is_append", 0);
         List<Review> reviews = reviewMapper.selectList(qw);
 
@@ -48,81 +105,72 @@ public class UserController {
 
         return Result.success(map);
     }
-    // 注册接口
-    @PostMapping("/register")
-    public Result<?> register(@RequestBody User user) {
-        // 1. 查询用户名是否已经存在
+
+    // 5. 管理员：获取所有用户列表（支持按用户名/姓名搜索）
+    @GetMapping("/list")
+    public Result<List<User>> getUserList(@RequestParam(required = false) String keyword) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("username", user.getUsername());
-        if (userMapper.selectCount(queryWrapper) > 0) {
-            return Result.error("该用户名/学号已被注册！");
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            queryWrapper.like("username", keyword).or().like("real_name", keyword);
         }
+        queryWrapper.orderByDesc("create_time");
 
-        // 2. 初始化新用户信息
-        user.setRole("USER"); // 默认普通用户
-        user.setCreditScore(new java.math.BigDecimal("100.0")); // 默认信誉分100
-        user.setStatus(1); // 状态正常
-        user.setCreateTime(LocalDateTime.now());
-
-        // 3. 插入数据库
-        userMapper.insert(user);
-        return Result.success();
+        List<User> userList = userMapper.selectList(queryWrapper);
+        // 抹除密码后再传给前端，保护隐私
+        userList.forEach(u -> u.setPassword(null));
+        return Result.success(userList);
     }
 
-    // 登录接口
-    @PostMapping("/login")
-    public Result<User> login(@RequestBody User user) {
-        // 根据用户名和密码查询
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("username", user.getUsername())
-                .eq("password", user.getPassword());
+    // 6. 管理员：违规账号处置 (封禁/解封)
+    @PostMapping("/changeStatus")
+    public Result<?> changeUserStatus(@RequestBody Map<String, Object> params) {
+        Long userId = Long.valueOf(params.get("id").toString());
+        Integer status = (Integer) params.get("status");
 
-        User dbUser = userMapper.selectOne(queryWrapper);
-
-        if (dbUser == null) {
-            return Result.error("用户名或密码错误！");
-        }
-        if (dbUser.getStatus() == 0) {
-            return Result.error("账号存在违规，已被限制登录！");
-        }
-
-        // 登录成功，返回用户信息
-        return Result.success(dbUser);
-    }
-    // 实名认证接口
-    @PostMapping("/auth")
-    public Result<User> auth(@RequestBody User user) {
-        if (user.getId() == null) {
-            return Result.error("用户ID不能为空！");
-        }
-        if (user.getRealName() == null || user.getIdCard() == null || user.getPhone() == null) {
-            return Result.error("真实姓名、身份证号和手机号不能为空！");
-        }
-
-        // 1. 创建一个用于更新的对象
-        User updateData = new User();
-        updateData.setId(user.getId());
-        updateData.setRealName(user.getRealName());
-        updateData.setIdCard(user.getIdCard());
-        updateData.setPhone(user.getPhone());
-
-        // 2. 更新数据库
-        userMapper.updateById(updateData);
-
-        // 3. 重新查出最新的用户信息并返回给前端
-        User newestUser = userMapper.selectById(user.getId());
-        return Result.success(newestUser);
-    }
-    // 🌟 修改个人信息接口
-    @PostMapping("/update")
-    public Result<?> updateProfile(@RequestBody User user) {
-        if (user.getId() == null) {
-            return Result.error("用户ID不能为空");
-        }
-
-        // 如果用户修改了密码，可以在这里加加密逻辑（目前咱们是明文，直接存）
+        User user = new User();
+        user.setId(userId);
+        user.setStatus(status);
         userMapper.updateById(user);
 
-        return Result.success("个人信息修改成功！下次登录生效。");
+        // 发送系统通知
+        Notification msg = new Notification();
+        msg.setUserId(userId);
+        msg.setIsRead(0);
+        msg.setCreateTime(LocalDateTime.now());
+
+        if (status == 0) { // 0是封禁
+            msg.setTitle("🚨 账号违规封禁通知");
+            msg.setContent("您的账号因违反平台规定，已被管理员强制封禁！封禁期间将无法使用平台核心功能。如有异议请联系管理员。");
+        } else {
+            msg.setTitle("✅ 账号解封通知");
+            msg.setContent("您的账号已解除限制，恢复正常使用，请自觉遵守平台规范。");
+        }
+        notificationMapper.insert(msg);
+
+        return Result.success(status == 0 ? "账号已封禁！" : "账号已恢复正常！");
+    }
+
+    // 7. 管理员：手动奖惩信誉分
+    @PostMapping("/adjustScore")
+    public Result<?> adjustScore(@RequestBody Map<String, Object> params) {
+        Long userId = Long.valueOf(params.get("id").toString());
+        BigDecimal newScore = new BigDecimal(params.get("score").toString());
+        String reason = params.get("reason").toString();
+
+        User user = new User();
+        user.setId(userId);
+        user.setCreditScore(newScore);
+        userMapper.updateById(user);
+
+        // 发送系统通知告知原因
+        Notification msg = new Notification();
+        msg.setUserId(userId);
+        msg.setTitle("⚖️ 信誉分调整通知");
+        msg.setContent("管理员操作了您的信誉分。当前最新分数为：" + newScore + " 分。操作原因：" + reason);
+        msg.setIsRead(0);
+        msg.setCreateTime(LocalDateTime.now());
+        notificationMapper.insert(msg);
+
+        return Result.success("信誉分调整成功！已通知该用户。");
     }
 }

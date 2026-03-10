@@ -10,22 +10,35 @@
       <div class="content-wrapper" v-if="goods.id">
         <div class="left-images">
           <el-carousel trigger="click" height="400px" arrow="always">
-            <el-carousel-item v-for="(img, index) in imageList" :key="index">
-              <el-image :src="img" fit="contain" style="width: 100%; height: 100%; background: #f5f5f5;" />
+            <el-carousel-item v-for="(media, index) in imageList" :key="index">
+              <video
+                  v-if="media.match(/\.(mp4|webm|ogg)$/i)"
+                  :src="media"
+                  controls
+                  style="width: 100%; height: 100%; background: #000; object-fit: contain;"
+              />
+              <el-image
+                  v-else
+                  :src="media"
+                  fit="contain"
+                  style="width: 100%; height: 100%; background: #f5f5f5;"
+              />
             </el-carousel-item>
           </el-carousel>
         </div>
 
         <div class="right-info">
           <h1 class="goods-title">{{ goods.title }}</h1>
-          <div style="display: flex; align-items: center; margin: 15px 0; padding: 10px; background: #fafafa; border-radius: 8px; cursor: pointer; transition: background 0.3s;" @click="router.push(`/user/seller/${goods.sellerId}`)">
-            <div style="width: 40px; height: 40px; background: #ffe60f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin-right: 15px;">卖</div>
+
+          <div class="seller-shortcut" @click="router.push(`/user/seller/${goods.sellerId}`)">
+            <div class="seller-avatar">卖</div>
             <div style="flex: 1;">
               <div style="font-size: 15px; font-weight: bold; color: #333;">点击查看卖家信用主页</div>
               <div style="font-size: 12px; color: #999;">深入了解卖家的历史评价与在售商品</div>
             </div>
-            <div style="color: #ccc;">❯</div>
+            <div style="color: #ccc; font-weight: bold;">❯</div>
           </div>
+
           <div class="price-box">
             <div class="current-price"><span class="symbol">￥</span>{{ goods.price }}</div>
             <div class="original-price" v-if="goods.originalPrice">原价: ￥{{ goods.originalPrice }}</div>
@@ -64,8 +77,12 @@
         <el-empty v-if="addressList.length === 0" description="您还没有收货地址哦">
           <el-button type="primary" @click="goToAddressManage">去添加地址</el-button>
         </el-empty>
+
         <el-radio-group v-model="selectedAddressId" style="width: 100%; display: flex; flex-direction: column; gap: 10px;" v-else>
-          <el-radio v-for="addr in addressList" :key="addr.id" :value="addr.id" style="border: 1px solid #ebeef5; padding: 15px; border-radius: 8px; margin-right: 0; width: 100%; height: auto;">
+          <el-radio
+              v-for="addr in addressList" :key="addr.id" :value="addr.id"
+              style="border: 1px solid #ebeef5; padding: 15px; border-radius: 8px; margin-right: 0; width: 100%; height: auto;"
+          >
             <div style="display: inline-block; white-space: normal; line-height: 1.5;">
               <span style="font-weight: bold; color: #333; margin-right: 10px;">{{ addr.receiver }}</span>
               <span style="color: #666; margin-right: 10px;">{{ addr.phone }}</span>
@@ -74,14 +91,18 @@
             </div>
           </el-radio>
         </el-radio-group>
+
         <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px; text-align: right; font-size: 16px;">
           实付金额：<span style="color: #ff5000; font-size: 24px; font-weight: bold;">￥{{ goods.price }}</span>
         </div>
       </div>
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="checkoutVisible = false">取 消</el-button>
-          <el-button type="primary" color="#ff5000" style="font-weight: bold; color: white;" :disabled="!selectedAddressId" @click="confirmAndPay">确认下单并前往支付宝</el-button>
+          <el-button type="primary" color="#ff5000" style="font-weight: bold; color: white;" :disabled="!selectedAddressId" @click="confirmAndPay">
+            确认下单并前往支付宝
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -134,19 +155,19 @@ const goods = ref({})
 const imageList = ref([])
 const loading = ref(false)
 
-// 结算弹窗相关
+// 结算弹窗与地址相关
 const checkoutVisible = ref(false)
 const addressList = ref([])
 const addressLoading = ref(false)
 const selectedAddressId = ref(null)
 
-// 🌟 聊天相关变量
+// 聊天相关变量
 const chatVisible = ref(false)
 const chatMessages = ref([])
 const inputMessage = ref('')
 let ws = null // WebSocket 实例
 
-// 1. 获取商品详情
+// 获取商品详情
 const fetchGoodsDetail = async () => {
   loading.value = true
   try {
@@ -154,6 +175,9 @@ const fetchGoodsDetail = async () => {
     if (res.data.code === 200) {
       goods.value = res.data.data
       if (goods.value.imageUrl) imageList.value = goods.value.imageUrl.split(',')
+    } else {
+      ElMessage.error(res.data.msg)
+      router.back()
     }
   } catch (error) {
     ElMessage.error('获取详情失败')
@@ -172,7 +196,9 @@ const openCheckoutDialog = async () => {
     const res = await axios.get('/api/address/list', { params: { userId: userStore.userInfo.id } })
     if (res.data.code === 200) {
       addressList.value = res.data.data
-      if (addressList.value.length > 0) selectedAddressId.value = addressList.value[0].id
+      if (addressList.value.length > 0) {
+        selectedAddressId.value = addressList.value[0].id
+      }
     }
   } catch (error) {
     ElMessage.error('获取地址失败')
@@ -181,27 +207,38 @@ const openCheckoutDialog = async () => {
   }
 }
 
-const goToAddressManage = () => { checkoutVisible.value = false; router.push('/user/address') }
+const goToAddressManage = () => {
+  checkoutVisible.value = false
+  router.push('/user/address')
+}
 
 const confirmAndPay = async () => {
   const selectedAddr = addressList.value.find(a => a.id === selectedAddressId.value)
   if (!selectedAddr) return
+
   try {
     const res = await axios.post('/api/orders/create', {
-      goodsId: goods.value.id, buyerId: userStore.userInfo.id,
-      receiver: selectedAddr.receiver, phone: selectedAddr.phone, address: selectedAddr.detailAddress
+      goodsId: goods.value.id,
+      buyerId: userStore.userInfo.id,
+      receiver: selectedAddr.receiver,
+      phone: selectedAddr.phone,
+      address: selectedAddr.detailAddress
     })
+
     if (res.data.code === 200) {
       ElMessage.success('订单生成成功，正在拉起支付宝...')
       window.location.href = `http://localhost:8080/api/alipay/pay?orderNo=${res.data.data.orderNo}`
     } else {
       ElMessage.error(res.data.msg)
+      checkoutVisible.value = false
+      fetchGoodsDetail()
     }
-  } catch (error) { ElMessage.error('下单失败') }
+  } catch (error) {
+    ElMessage.error('下单失败，网络异常')
+  }
 }
 
-// ---------- 🌟 实时聊天 WebSocket 核心逻辑 ----------
-
+// ---------- 实时聊天 WebSocket 核心逻辑 ----------
 const openChatWindow = async () => {
   if (goods.value.sellerId === userStore.userInfo.id) {
     ElMessage.warning('这是您自己发布的商品哦，不能自己和自己聊天！')
@@ -227,24 +264,18 @@ const fetchChatHistory = async () => {
 }
 
 const initWebSocket = () => {
-  if (ws) return // 防止重复连接
-  // 核心：连上我们在后端写的 ws 接口
+  if (ws) return
   ws = new WebSocket(`ws://localhost:8080/ws/${userStore.userInfo.id}`)
-
   ws.onopen = () => console.log('WebSocket 连接成功！')
-
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data)
-    // 如果收到的消息是当前这个卖家的，才推入对话框
     if (msg.senderId === goods.value.sellerId) {
       chatMessages.value.push(msg)
       scrollToBottom()
     } else {
-      // 别人发来的消息，可以在右上角弹个提示
       ElMessage.info('您收到了一条新的闲置私信！')
     }
   }
-
   ws.onerror = () => ElMessage.error('聊天连接断开，请刷新页面')
 }
 
@@ -257,21 +288,17 @@ const sendMessage = () => {
     content: inputMessage.value
   }
 
-  // 1. 通过 WebSocket 发给后端路由给卖家
   ws.send(JSON.stringify(msgObj))
-
-  // 2. 将自己的消息立刻展示在右侧
   chatMessages.value.push({
     senderId: userStore.userInfo.id,
     content: inputMessage.value
   })
-
   inputMessage.value = ''
   scrollToBottom()
 }
 
 const closeChat = () => {
-  // 离开抽屉不必须关闭 WS（为了能继续收通知），但这里为了简单可以不断开
+  // 保持连接，离开抽屉不必须关闭 WS
 }
 
 const scrollToBottom = () => {
@@ -283,13 +310,18 @@ const scrollToBottom = () => {
 </script>
 
 <style scoped>
-/* 原有样式保留 */
 .detail-container { display: flex; justify-content: center; }
 .detail-box { width: 1000px; background: #fff; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .content-wrapper { display: flex; gap: 40px; margin-top: 20px; }
 .left-images { width: 400px; border-radius: 8px; overflow: hidden; border: 1px solid #ebeef5; }
 .right-info { flex: 1; display: flex; flex-direction: column; }
 .goods-title { margin-top: 0; font-size: 22px; color: #333; line-height: 1.4; }
+
+/* 卖家快捷名片样式 */
+.seller-shortcut { display: flex; align-items: center; margin: 15px 0; padding: 12px 15px; background: #fafafa; border-radius: 8px; cursor: pointer; transition: all 0.3s; border: 1px solid transparent; }
+.seller-shortcut:hover { background: #fff; border-color: #ffe60f; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.seller-avatar { width: 40px; height: 40px; background: #ffe60f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; margin-right: 15px; color: #333; }
+
 .price-box { background: #fff8e6; padding: 20px; border-radius: 8px; margin: 15px 0; display: flex; align-items: baseline; gap: 15px; }
 .current-price { color: #ff5000; font-size: 28px; font-weight: bold; }
 .symbol { font-size: 16px; margin-right: 2px; }
@@ -302,7 +334,7 @@ const scrollToBottom = () => {
 .buy-btn { background-color: #ff5000; border-color: #ff5000; color: #fff; font-weight: bold; width: 160px; border-radius: 20px; }
 .chat-btn { border-radius: 20px; width: 140px; }
 
-/* 🌟 聊天框样式 (模仿微信/闲鱼) */
+/* 聊天框样式 */
 .chat-container { display: flex; flex-direction: column; height: calc(100vh - 80px); }
 .chat-history { flex: 1; overflow-y: auto; padding: 20px 10px; background-color: #f5f5f5; border-radius: 8px; }
 .msg-row { display: flex; margin-bottom: 20px; width: 100%; }
@@ -318,8 +350,6 @@ const scrollToBottom = () => {
 }
 .msg-left .msg-bubble { background-color: #fff; color: #333; border: 1px solid #ebeef5; border-top-left-radius: 0; }
 .msg-right .msg-bubble { background-color: #ffe60f; color: #333; border-top-right-radius: 0; }
-
 .chat-input-box { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
-/* 深度修改 Element Plus textarea 隐藏右下角的拖拽块 */
 :deep(.el-textarea__inner) { border-radius: 8px; }
 </style>

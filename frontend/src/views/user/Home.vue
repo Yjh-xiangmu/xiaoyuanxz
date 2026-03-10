@@ -3,8 +3,7 @@
     <div class="home-box">
       <div class="welcome-header">
         <div class="greeting">
-          <h2>👋 欢迎回来，<span class="highlight">{{ userStore.userInfo.username }}</span>！</h2>
-          <p class="subtitle">让校园里的每一件闲置，都找到它的新主人。</p>
+          <h2>👋 欢迎回来，<span class="highlight">{{ userStore.userInfo.realName || userStore.userInfo.username }}</span>！</h2>          <p class="subtitle">让校园里的每一件闲置，都找到它的新主人。</p>
         </div>
       </div>
 

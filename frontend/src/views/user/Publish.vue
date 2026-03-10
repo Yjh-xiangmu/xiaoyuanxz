@@ -45,14 +45,39 @@
               :limit="9"
               accept="image/*,video/*"
               :on-success="handleUploadSuccess"
-              :on-remove="handleRemove"
               :on-exceed="handleExceed"
           >
             <el-icon><Plus /></el-icon>
+
+            <template #file="{ file }">
+              <div style="width: 100%; height: 100%; position: relative;">
+                <video
+                    v-if="file.url && file.url.match(/\.(mp4|webm|ogg)$/i)"
+                    :src="file.url"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                ></video>
+                <img
+                    v-else
+                    :src="file.url"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                    alt=""
+                />
+                <span
+                    class="el-upload-list__item-actions"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;"
+                    onmouseover="this.style.opacity=1"
+                    onmouseout="this.style.opacity=0"
+                >
+                  <span style="color: white; cursor: pointer; font-size: 20px;" @click="handleRemove(file)">
+                    <el-icon><Delete /></el-icon>
+                  </span>
+                </span>
+              </div>
+            </template>
           </el-upload>
           <div class="el-upload__tip" style="color: #999; margin-top: 8px; line-height: 1.5;">
-            点击加号上传。支持上传最多 9 张图片或视频。<br/>
-            (上传成功后，文件将直接保存在你电脑的 uploads 文件夹中)
+            点击加号上传。支持上传最多 9 个文件 (图片PNG/JPG与短视频均可)。<br/>
+            (单文件大小建议不超过 100MB)
           </div>
         </el-form-item>
 
@@ -68,9 +93,9 @@
 import { ref, reactive } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-// 🌟 引入 ElMessageBox 用于弹窗
+// 🌟 引入 Delete 图标
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const userStore = useUserStore()
@@ -97,7 +122,8 @@ const handleUploadSuccess = (response, uploadFile) => {
   }
 }
 
-const handleRemove = () => {
+const handleRemove = (fileToRemove) => {
+  fileList.value = fileList.value.filter(file => file.uid !== fileToRemove.uid)
   updateImageUrlForm()
 }
 
@@ -110,7 +136,6 @@ const updateImageUrlForm = () => {
   goodsForm.imageUrl = urls.join(',')
 }
 
-// 🌟 新增：清空表单的方法
 const resetForm = () => {
   goodsForm.title = ''
   goodsForm.category = ''
@@ -118,7 +143,7 @@ const resetForm = () => {
   goodsForm.originalPrice = 0
   goodsForm.description = ''
   goodsForm.imageUrl = ''
-  fileList.value = [] // 清空已上传的图片卡片
+  fileList.value = []
 }
 
 const submitPublish = async () => {
@@ -138,7 +163,6 @@ const submitPublish = async () => {
     })
 
     if (res.data.code === 200) {
-      // 🌟 核心改动：不再直接跳转，而是弹出友好的选择框
       ElMessageBox.confirm(
           '商品发布成功！已提交给管理员审核。接下来您想？',
           '🎉 发布成功',
@@ -146,16 +170,13 @@ const submitPublish = async () => {
             confirmButtonText: '继续发闲置',
             cancelButtonText: '返回大厅',
             type: 'success',
-            center: true, // 文字居中更好看
+            center: true,
           }
       ).then(() => {
-        // 用户点击了“继续发闲置”
         resetForm()
       }).catch(() => {
-        // 用户点击了“返回大厅”
         router.push('/user/home')
       })
-
     } else {
       ElMessage.error(res.data.msg)
     }

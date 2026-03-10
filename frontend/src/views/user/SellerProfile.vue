@@ -2,7 +2,10 @@
   <div class="seller-container">
     <div class="seller-box" v-loading="loading">
       <div class="seller-card" v-if="sellerInfo.id">
-        <div class="avatar">{{ sellerInfo.username.charAt(0).toUpperCase() }}</div>
+        <div class="avatar" style="overflow: hidden;">
+          <img v-if="sellerInfo.avatar" :src="sellerInfo.avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+          <span v-else>{{ sellerInfo.username.charAt(0).toUpperCase() }}</span>
+        </div>
         <div class="info-main">
           <h2 class="username">{{ sellerInfo.username }}</h2>
           <div class="tags">

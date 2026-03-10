@@ -22,4 +22,5 @@ public class User {
     private Integer status;
     private LocalDateTime createTime;
     private String phone;
+    private String avatar;
 }

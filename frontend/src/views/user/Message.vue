@@ -37,8 +37,9 @@
                   class="session-item"
                   @click="openChatWindow(session.partnerId, session.partnerName)"
               >
-                <div class="avatar-box">
-                  {{ session.partnerName.charAt(0).toUpperCase() }}
+                <div class="avatar-box" style="overflow: hidden;">
+                  <img v-if="session.partnerAvatar" :src="session.partnerAvatar" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <span v-else>{{ session.partnerName.charAt(0).toUpperCase() }}</span>
                   <el-badge v-if="session.unreadCount > 0" :value="session.unreadCount" class="badge-item" />
                 </div>
 

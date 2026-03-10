@@ -114,7 +114,7 @@ const selectCategory = (cat) => {
 // 点击卡片进入详情（详情页下一步写）
 const goToDetail = (id) => {
   router.push(`/user/goods/${id}`) // 占位，等写了详情页再放开
-  ElMessage.success('点击了商品 ID: ' + id + '，即将开发详情页！')
+  ElMessage.success('点击了商品 ID: ' + id + '，进入详情页！')
 }
 </script>
 

@@ -177,12 +177,12 @@ const logout = () => {
 
 <style scoped>
 .user-layout { min-height: 100vh; background-color: #f5f5f5; }
-.top-nav { background-color: #ffe60f; height: 60px; display: flex; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 999; }
+.top-nav { background-color: #409EFF; height: 60px; display: flex; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 999; }
 .nav-content { width: 1200px; display: flex; justify-content: space-between; align-items: center; }
 .logo-area { font-size: 22px; font-weight: bold; color: #333; }
 .menu-area { display: flex; gap: 30px; }
 .nav-item { text-decoration: none; color: #333; font-size: 16px; font-weight: 500; transition: all 0.3s; }
-.nav-item:hover { color: #000; }
+.nav-item:hover { color: #f5f5f5; }
 .nav-item.router-link-active { font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; }
 .user-area { display: flex; align-items: center; gap: 15px; }
 .credit { font-weight: bold; color: #333; font-size: 14px; background: rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 12px; }
