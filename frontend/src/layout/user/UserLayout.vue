@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -75,63 +75,42 @@ import axios from 'axios'
 const router = useRouter()
 const userStore = useUserStore()
 
-// 控制实名认证弹窗的显示
+// ==================== 实名认证弹窗 ====================
 const showAuthDialog = ref(false)
+const authForm = reactive({ realName: '', idCard: '', phone: '' })
 
-// 认证表单数据
-const authForm = reactive({
-  realName: '',
-  idCard: '',
-  phone: ''
-})
-
-// 提交实名认证
 const submitAuth = async () => {
   if (!authForm.realName || !authForm.idCard || !authForm.phone) {
     ElMessage.warning('姓名、身份证号和手机号必须填写！')
     return
   }
-
-  // 1. 真实姓名校验：2-10个汉字
   const nameReg = /^[\u4e00-\u9fa5]{2,10}$/
   if (!nameReg.test(authForm.realName)) {
     ElMessage.warning('真实姓名格式错误，请输入2-10个汉字！')
     return
   }
-
-  // 2. 身份证号严格校验
   const idCardReg = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])\d{3}[\dX]$/i
   if (!idCardReg.test(authForm.idCard)) {
     ElMessage.warning('身份证号格式不合法，请输入正确的18位身份证号！')
     return
   }
-
-  // 3. 手机号严格校验：必须是1开头，第二位是3-9，共11位数字
   const phoneReg = /^1[3-9]\d{9}$/
   if (!phoneReg.test(authForm.phone)) {
     ElMessage.warning('手机号码格式不合法！')
     return
   }
-
   try {
-    // 🌟 核心修复：复用已有的 /api/user/update 接口，代替不存在的 /auth 接口
     const res = await axios.post('/api/user/update', {
       id: userStore.userInfo.id,
       realName: authForm.realName,
-      // 统一将身份证最后一位的 x 转为大写 X 存入数据库，方便后续比对
       idCard: authForm.idCard.toUpperCase(),
       phone: authForm.phone
     })
-
     if (res.data.code === 200) {
       ElMessage.success('实名认证成功！可以开始使用平台啦。')
-
-      // 🌟 核心修复：手动更新 Pinia 里的用户信息缓存
       userStore.userInfo.realName = authForm.realName
       userStore.userInfo.idCard = authForm.idCard.toUpperCase()
       userStore.userInfo.phone = authForm.phone
-
-      // 关闭弹窗
       showAuthDialog.value = false
     } else {
       ElMessage.error(res.data.msg)
@@ -141,37 +120,65 @@ const submitAuth = async () => {
   }
 }
 
-// 获取未读消息数量逻辑
+// ==================== 未读消息角标（系统通知 + 私信合并） ====================
 const unreadCount = ref(0)
+let pollingTimer = null
+
 const fetchUnreadCount = async () => {
   if (!userStore.userInfo.id) return
   try {
-    const res = await axios.get('/api/notification/unreadCount', {
-      params: { userId: userStore.userInfo.id }
-    })
-    if (res.data.code === 200) {
-      unreadCount.value = res.data.data
+    // 并发请求：系统通知未读数 + 私信会话列表
+    const [res1, res2] = await Promise.all([
+      axios.get('/api/notification/unreadCount', {
+        params: { userId: userStore.userInfo.id }
+      }),
+      axios.get('/api/chat/sessions', {
+        params: { userId: userStore.userInfo.id }
+      })
+    ])
+
+    // 系统通知未读数
+    const sysUnread = (res1.data.code === 200) ? Number(res1.data.data) : 0
+
+    // 所有私信会话的未读数相加
+    let chatUnread = 0
+    if (res2.data.code === 200 && Array.isArray(res2.data.data)) {
+      chatUnread = res2.data.data.reduce((sum, session) => sum + (session.unreadCount || 0), 0)
     }
+
+    unreadCount.value = sysUnread + chatUnread
   } catch (error) {
-    console.error('获取未读消息数量失败')
+    // 静默失败，不影响主流程
   }
 }
 
-// 页面加载时统一执行逻辑
-onMounted(() => {
-  // 检查是否需要实名认证弹窗
-  if (!userStore.userInfo.realName) {
-    showAuthDialog.value = true
-  }
-  // 拉取未读消息数量
-  fetchUnreadCount()
-})
-
-// 退出登录
+// ==================== 退出登录 ====================
 const logout = () => {
   userStore.clearUserInfo()
   router.push('/login')
 }
+
+// ==================== 生命周期 ====================
+onMounted(() => {
+  // 检查是否需要实名认证
+  if (!userStore.userInfo.realName) {
+    showAuthDialog.value = true
+  }
+
+  // 立即拉取一次未读数
+  fetchUnreadCount()
+
+  // 每 30 秒自动轮询刷新，保持角标实时
+  pollingTimer = setInterval(fetchUnreadCount, 30000)
+})
+
+onUnmounted(() => {
+  // 组件销毁时清除定时器，防止内存泄漏
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
+})
 </script>
 
 <style scoped>

@@ -24,4 +24,7 @@ public class Orders {
     private String phone;
     private String address;
     private Integer isRated;
+    // 新增：仲裁相关字段
+    private Integer isDispute;      // 0-正常 1-申请仲裁中
+    private String disputeReason;   // 申请仲裁原因
 }

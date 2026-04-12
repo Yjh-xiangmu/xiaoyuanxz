@@ -35,6 +35,11 @@
           <span>评价与合规管理</span>
         </el-menu-item>
 
+        <el-menu-item index="/admin/announcement">
+          <el-icon><Notification /></el-icon>
+          <span>系统公告管理</span>
+        </el-menu-item>
+
       </el-menu>
     </div>
 
@@ -56,8 +61,8 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-// 🌟 核心：记得把 User(用户) 和 List(列表) 图标引入进来
-import {DataLine, Goods, User, List, ChatDotSquare} from '@element-plus/icons-vue'
+// 🌟 核心：引入 Notification 图标用于公告菜单
+import {DataLine, Goods, User, List, ChatDotSquare, Notification} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()

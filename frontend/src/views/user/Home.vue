@@ -3,8 +3,19 @@
     <div class="home-box">
       <div class="welcome-header">
         <div class="greeting">
-          <h2>👋 欢迎回来，<span class="highlight">{{ userStore.userInfo.realName || userStore.userInfo.username }}</span>！</h2>          <p class="subtitle">让校园里的每一件闲置，都找到它的新主人。</p>
+          <h2>👋 欢迎回来，<span class="highlight">{{ userStore.userInfo.realName || userStore.userInfo.username }}</span>！</h2>
+          <p class="subtitle">让校园里的每一件闲置，都找到它的新主人。</p>
         </div>
+      </div>
+
+      <div class="announcement-box" v-if="announcementList.length > 0">
+        <el-alert
+            :title="`📢 最新公告：${announcementList[0].title}`"
+            type="warning"
+            :description="announcementList[0].content"
+            show-icon
+            :closable="false"
+        />
       </div>
 
       <el-row :gutter="20" class="data-cards">
@@ -92,7 +103,7 @@ import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-import * as echarts from 'echarts' // 🌟 引入 ECharts
+import * as echarts from 'echarts'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -106,11 +117,14 @@ const dashData = reactive({
   categoryPieData: []
 })
 
+// 新增：公告列表数据
+const announcementList = ref([])
+
 // 拉取后端大盘数据
 const fetchDashboardData = async () => {
   try {
     const res = await axios.get('/api/data/dashboard')
-    if (res.data.code === 200) {
+    if (res.data.code == 200) {
       Object.assign(dashData, res.data.data)
       // 数据拿到后，等 DOM 渲染完毕，开始画图
       nextTick(() => {
@@ -119,6 +133,19 @@ const fetchDashboardData = async () => {
     }
   } catch (error) {
     ElMessage.error('获取大盘数据失败')
+  }
+}
+
+// 新增：拉取公告列表
+const fetchAnnouncements = async () => {
+  try {
+    // 这里的请求路径需和后端一致，如果遇到跨域或404，确认是否有 /api 前缀即可
+    const res = await axios.get('/api/announcement/list')
+    if (res.data.code == 200) {
+      announcementList.value = res.data.data
+    }
+  } catch (error) {
+    console.error('获取公告数据失败', error)
   }
 }
 
@@ -154,7 +181,7 @@ const initPieChart = () => {
           label: { show: true, fontSize: '20', fontWeight: 'bold' }
         },
         labelLine: { show: false },
-        data: dashData.categoryPieData // 绑定后端返回的数据！
+        data: dashData.categoryPieData
       }
     ]
   }
@@ -168,6 +195,7 @@ const initPieChart = () => {
 
 onMounted(() => {
   fetchDashboardData()
+  fetchAnnouncements() // 组件挂载时拉取公告
 })
 </script>
 
@@ -180,6 +208,9 @@ onMounted(() => {
 .greeting h2 { margin: 0; color: #333; font-size: 26px; font-weight: 600;}
 .highlight { color: #ff5000; }
 .subtitle { margin: 10px 0 0 0; color: #666; font-size: 15px; }
+
+/* 新增：公告外边距样式 */
+.announcement-box { margin-bottom: 20px; }
 
 /* 数据卡片 */
 .data-cards { margin-bottom: 30px; }

@@ -23,7 +23,12 @@ const router = createRouter({
         { path: 'audit', component: () => import('../views/admin/Audit.vue') },
         { path: 'orders', component: () => import('../views/admin/AdminOrders.vue') },
         { path: 'users', component: () => import('../views/admin/UserManage.vue') },
-        { path: 'reviews', component: () => import('../views/admin/AdminReviews.vue') }
+        { path: 'reviews', component: () => import('../views/admin/AdminReviews.vue') },
+        {
+          path: 'announcement',
+          name: 'AdminAnnouncement',
+          component: () => import('@/views/admin/AnnouncementManage.vue')
+        }
         // TODO: 之后把审核中心等加在这里
       ]
     },

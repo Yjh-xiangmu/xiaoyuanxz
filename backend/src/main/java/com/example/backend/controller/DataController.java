@@ -32,31 +32,48 @@ public class DataController {
     public Result<Map<String, Object>> getDashboardData() {
         Map<String, Object> data = new HashMap<>();
 
-        // 1. 顶部四大核心指标
-        data.put("totalUsers", userMapper.selectCount(null)); // 注册总人数
+        // ========== 四大核心指标 ==========
+        data.put("totalUsers", userMapper.selectCount(null));
 
         QueryWrapper<Goods> goodsQuery = new QueryWrapper<>();
         goodsQuery.eq("status", 1);
-        data.put("activeGoods", goodsMapper.selectCount(goodsQuery)); // 活跃在售闲置数
+        data.put("activeGoods", goodsMapper.selectCount(goodsQuery));
 
         QueryWrapper<Orders> orderQuery = new QueryWrapper<>();
-        orderQuery.eq("status", 3); // 仅统计已完成的订单
-        data.put("completedOrders", ordersMapper.selectCount(orderQuery)); // 累计成交单数
+        orderQuery.eq("status", 3);
+        data.put("completedOrders", ordersMapper.selectCount(orderQuery));
 
-        // 简单统计总交易额
         List<Orders> completedOrderList = ordersMapper.selectList(orderQuery);
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (Orders order : completedOrderList) {
             totalAmount = totalAmount.add(order.getAmount());
         }
-        data.put("totalAmount", totalAmount); // 累计交易总额
+        data.put("totalAmount", totalAmount);
 
-        // 2. 饼图数据：商品分类占比
+        // ========== 待审核商品 ==========
+        QueryWrapper<Goods> pendingQuery = new QueryWrapper<>();
+        pendingQuery.eq("status", 0);
+        data.put("pendingAuditCount", goodsMapper.selectCount(pendingQuery));
+
+        QueryWrapper<Goods> recentPendingQuery = new QueryWrapper<>();
+        recentPendingQuery.eq("status", 0).orderByDesc("create_time").last("LIMIT 5");
+        data.put("recentPendingGoods", goodsMapper.selectList(recentPendingQuery));
+
+        // ========== 真正的仲裁订单（is_dispute=1） ==========
+        QueryWrapper<Orders> disputeQuery = new QueryWrapper<>();
+        disputeQuery.eq("is_dispute", 1);
+        data.put("disputeOrderCount", ordersMapper.selectCount(disputeQuery));
+
+        QueryWrapper<Orders> recentDisputeQuery = new QueryWrapper<>();
+        recentDisputeQuery.eq("is_dispute", 1).orderByDesc("create_time").last("LIMIT 5");
+        data.put("recentDisputeOrders", ordersMapper.selectList(recentDisputeQuery));
+
+        // ========== 饼图数据 ==========
         String[] categories = {"数码", "书籍", "生活", "服饰", "其他"};
         List<Map<String, Object>> pieData = new ArrayList<>();
         for (String cat : categories) {
             QueryWrapper<Goods> catQ = new QueryWrapper<>();
-            catQ.eq("category", cat).ne("status", 3); // 排除违规下架的
+            catQ.eq("category", cat).ne("status", 3);
             long count = goodsMapper.selectCount(catQ);
             if (count > 0) {
                 Map<String, Object> map = new HashMap<>();
